@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Todo from "./types/Todo";
 import sortByID from "./utils/sortbyID";
-import getAllItems from "./utils/getAllItems";
 import putItem from "./utils/putItem";
 import TodoWithoutID from "./types/TodoWithoutID";
 import deleteItem from "./utils/deleteItem";
-import { textChangeRangeIsUnchanged } from "typescript";
 import toggleStatus from "./utils/toggleStatus";
 import patchItem from "./utils/patchItem";
 import pullLatestState from "./utils/pullLatestState";
