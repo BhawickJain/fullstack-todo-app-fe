@@ -1,30 +1,45 @@
 import React, { useEffect, useState } from "react";
-import mockTodoList from "./data/mockTodo";
 import Todo from "./types/Todo";
 import sortByID from "./utils/sortbyID";
-import axios from "axios";
-
-const basePath = "https://api-todo-bhawick.herokuapp.com";
+import getAllItems from "./utils/getAllItems";
+import putItem from "./utils/putItem";
+import TodoWithoutID from "./types/TodoWithoutID";
+import deleteItem from "./utils/deleteItem";
+import { textChangeRangeIsUnchanged } from "typescript";
+import toggleStatus from "./utils/toggleStatus";
+import patchItem from "./utils/patchItem";
+import pullLatestState from "./utils/pullLatestState";
 
 function App(): JSX.Element {
   const [todoList, setTodoList] = useState<Todo[]>([]);
   const [todoInput, setTodoInput] = useState("");
+
+  // initialisation
   useEffect(() => {
-    axios.get(`${basePath}/items`).then((res) => console.log(res));
-    setTodoList(sortByID(mockTodoList));
+    pullLatestState(setTodoList);
+    console.log("data loaded");
   }, []);
 
-  const handleClickDone = (id: string): void => {
-    console.log(`${id} done`);
-    let todo: Todo = todoList.filter((todo) => todo.id.toString() === id)[0];
+  const handleClickStatus = (id: string): void => {
+    console.log(`${id} status`);
+    const todoFound: Todo = todoList.filter(
+      (todo) => todo.id.toString() === id
+    )[0];
     const newTodoList: Todo[] = todoList.filter(
       (todo) => todo.id.toString() !== id
     );
-    todo = {
-      ...todo,
-      status: "done",
+    console.log(todoFound, "found for Patch");
+
+    const todoUpdated: Todo = {
+      id: todoFound.id,
+      creationDate: todoFound.creationDate,
+      task: todoFound.task,
+      status: toggleStatus(todoFound.status),
     };
-    setTodoList(sortByID([...newTodoList, todo]));
+    console.log(todoUpdated, "to be patched with");
+    patchItem(todoUpdated).then((res) => console.log(res.status));
+    setTodoList(sortByID([...newTodoList, todoUpdated]));
+    pullLatestState(setTodoList);
   };
 
   const handleClickDelete = (id: string): void => {
@@ -32,26 +47,31 @@ function App(): JSX.Element {
     const newTodoList: Todo[] = todoList.filter(
       (todo) => todo.id.toString() !== id
     );
-    setTodoList(sortByID([...newTodoList]));
+    deleteItem(id).then((status) => {
+      console.log(status);
+    });
+    setTodoList(newTodoList);
+    pullLatestState(setTodoList);
   };
 
-  const handleChangeNewTask = (newInput: string): void => {
-    console.log(`current state of input: ${newInput}`);
+  const handleChangeInputTask = (newInput: string): void => {
     setTodoInput(newInput);
   };
 
   const handleTaskSubmit = (): void => {
     if (todoInput !== "") {
-      console.log(`current state of input: ${todoInput}`);
-      const newTodo: Todo = {
-        id: todoList.length,
-        creationDate: "2022-08-09T08:43:00Z",
+      const newTodo: TodoWithoutID = {
+        creationDate: "2022-08-15:43:00Z",
         status: "in-progress",
         task: todoInput,
       };
 
-      setTodoList([...todoList, newTodo]);
-      setTodoInput("");
+      putItem(newTodo).then((res) => {
+        console.log(res);
+        setTodoList([...todoList, res.data]);
+        setTodoInput("");
+      });
+      pullLatestState(setTodoList);
     }
   };
 
@@ -64,7 +84,7 @@ function App(): JSX.Element {
         <div>
           <input
             type="text"
-            onChange={(e) => handleChangeNewTask(e.target.value)}
+            onChange={(e) => handleChangeInputTask(e.target.value)}
             value={todoInput}
           />
           <button className="submit" onClick={() => handleTaskSubmit()}>
@@ -79,7 +99,7 @@ function App(): JSX.Element {
                   <button
                     className="status"
                     id={todo.id.toString()}
-                    onClick={() => handleClickDone(todo.id.toString())}
+                    onClick={() => handleClickStatus(todo.id.toString())}
                   >
                     [{todo.status}]
                   </button>

@@ -1,6 +1,8 @@
+import Status from "./Status";
+
 export default interface Todo {
   id: number;
   creationDate: string;
-  status: "done" | "in-progress";
+  status: Status;
   task: string;
 }
